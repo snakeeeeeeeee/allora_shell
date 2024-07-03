@@ -157,18 +157,18 @@ function do_install_worker() {
 
 
     #拉取依赖文件
-    curl -o Dockerfile https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/Dockerfile
-    curl -o Dockerfile https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/Dockerfile_inference
-    curl -o Dockerfile https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/requirements.txt
-    curl -o Dockerfile https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/app.py
-    curl -o Dockerfile https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/main.py
+curl -o Dockerfile https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/Dockerfile
+curl -o Dockerfile_inference https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/Dockerfile_inference
+curl -o requirements.txt https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/requirements.txt
+curl -o app.py https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/app.py
+curl -o main.py https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/main.py
 
     # 初始化worker
     allocmd generate worker --env prod && chmod -R +rx ./data/scripts
     
 
-    # 添加inference服务到prod-docker-compose.yaml
-    sed -i '/services:/a\
+# 设置prod-docker-compose
+sed -i '/services:/a\
   inference:\
     container_name: inference-hf\
     build:\
@@ -177,6 +177,7 @@ function do_install_worker() {
     command: python -u /app/app.py\
     ports:\
       - "8000:8000"' prod-docker-compose.yaml
+
 
     # 构建运行镜像
     docker compose -f prod-docker-compose.yaml up --build -d
