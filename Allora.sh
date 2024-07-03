@@ -164,8 +164,8 @@ function do_install_worker() {
     curl -o Dockerfile https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/main.py
 
     # 初始化worker
-    allocmd generate worker --env prod
-    chmod -R +rx ./data/scripts
+    allocmd generate worker --env prod && chmod -R +rx ./data/scripts
+    
 
     # 设置prod-docker-compose
     sed -i '/services:/a\
