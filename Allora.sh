@@ -143,8 +143,8 @@ function do_install_worker() {
     chmod -R 777 ./$dir_name/worker/data/worker
 
     allocmd generate worker --name $dir_name --topic 1 --env dev
-    cd ~/$dir_name/worker
-
+    cd $HOME/$dir_name/worker
+   
 
     # 更新config.yaml的hex_coded_pk
     hex_coded_pk="$(echo "y" | allorad keys export "$dir_name" --keyring-backend test --unarmored-hex --unsafe)"
