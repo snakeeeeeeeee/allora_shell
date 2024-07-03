@@ -167,16 +167,16 @@ function do_install_worker() {
     allocmd generate worker --env prod && chmod -R +rx ./data/scripts
     
 
-    # 设置prod-docker-compose
-    sed -i '/services:/a\
-      inference:\
-        container_name: inference-hf\
-        build:\
-          context: .\
-          dockerfile: Dockerfile_inference\
-        command: python -u /app/app.py\
-        ports:\
-          - "8000:8000"' prod-docker-compose.yaml
+# 设置prod-docker-compose
+sed -i '/services:/a\
+  inference:\
+    container_name: inference-hf\
+    build:\
+      context: .\
+      dockerfile: Dockerfile_inference\
+    command: python -u /app/app.py\
+    ports:\
+      - "8000:8000"' prod-docker-compose.yaml
 
     # 构建运行镜像
     docker compose -f prod-docker-compose.yaml up --build -d
