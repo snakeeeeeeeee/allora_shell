@@ -188,11 +188,12 @@ function do_install_worker() {
 function install_worker() {
 	# base
 	install_base
-    # python
-    install_python
+    	# python
+    	install_python
 	# docker
 	install_docker
-
+ 	# install worker
+  	do_install_worker
 }
 
 
