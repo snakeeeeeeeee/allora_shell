@@ -388,8 +388,7 @@ function install_worker() {
   # python
   install_python
 	# docker
-	install_docker
- 	# install worker
+	#install_docker
   do_install_worker2
 }
 
