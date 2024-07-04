@@ -372,6 +372,9 @@ EOF
 
   docker ps
 
+  echo "══════════════════════════════════════════"
+  echo "║     Worker Install Success              ║"
+  echo "══════════════════════════════════════════"
 }
 
 function install_worker() {
