@@ -425,7 +425,7 @@ function main_menu() {
 
     case $OPTION in
     1) install_worker ;;
-    2) install_worker ;;
+    2) install_worker2 ;;
     3) query_log ;;
     *) echo "无效选项。" ;;
     esac
