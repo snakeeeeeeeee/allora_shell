@@ -162,11 +162,11 @@ function do_install_worker() {
 
 
     #拉取依赖文件
-curl -o Dockerfile https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/Dockerfile
-curl -o Dockerfile_inference https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/Dockerfile_inference
-curl -o requirements.txt https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/requirements.txt
-curl -o app.py https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/app.py
-curl -o main.py https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/main.py
+    curl -o Dockerfile https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/Dockerfile
+    curl -o Dockerfile_inference https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/Dockerfile_inference
+    curl -o requirements.txt https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/requirements.txt
+    curl -o app.py https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/app.py
+    curl -o main.py https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/main.py
 
     # 初始化worker
     allocmd generate worker --env prod && chmod -R +rx ./data/scripts
@@ -181,7 +181,12 @@ sed -i '/services:/a\
       dockerfile: Dockerfile_inference\
     command: python -u /app/app.py\
     ports:\
-      - "8000:8000"' prod-docker-compose.yaml
+      - "8000:8000"\
+    networks:\
+      b7s-local:\
+        aliases:\
+          - inference\
+        ipv4_address: 172.19.0.4' prod-docker-compose.yaml
 
     # 构建镜像
     docker compose -f prod-docker-compose.yaml build
@@ -387,8 +392,24 @@ function install_worker() {
 	install_base
   # python
   install_python
+  # go
+  install_go
 	# docker
-	#install_docker
+	install_docker
+	# worker
+	do_install_worker
+}
+
+function install_worker2() {
+	# base
+	install_base
+  # python
+  install_python
+  # go
+  install_go
+	# docker
+	install_docker
+	# worker
   do_install_worker2
 }
 
@@ -399,11 +420,13 @@ function main_menu() {
     echo "=====================安装及常规修改功能========================="
     echo "请选择要执行的操作:"
     echo "1. 安装worker"
+    echo "2. 安装worker_v2"
     read -p "请输入选项: " OPTION
 
     case $OPTION in
     1) install_worker ;;
-    2) query_log ;;
+    2) install_worker ;;
+    3) query_log ;;
     *) echo "无效选项。" ;;
     esac
 }
