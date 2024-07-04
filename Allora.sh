@@ -152,6 +152,8 @@ function do_install_worker() {
 
 
     # 更新config.yaml的hex_coded_pk
+    echo -e "${BOLD}${DARK_YELLOW}更新config.yaml..."
+
     hex_coded_pk="$(echo "y" | allorad keys export "$dir_name" --keyring-backend test --unarmored-hex --unsafe)"
     hex_coded_pk=$(echo "$hex_coded_pk" | tail -n 1)
     sed -i "s|hex_coded_pk: .*|hex_coded_pk: $hex_coded_pk|" config.yaml
@@ -162,6 +164,8 @@ function do_install_worker() {
 
 
     #拉取依赖文件
+    echo -e "${BOLD}${DARK_YELLOW}拉取依赖文件..."
+
     curl -o Dockerfile https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/Dockerfile
     curl -o Dockerfile_inference https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/Dockerfile_inference
     curl -o requirements.txt https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/requirements.txt
@@ -169,6 +173,7 @@ function do_install_worker() {
     curl -o main.py https://raw.githubusercontent.com/snakeeeeeeeee/allora_shell/main/main.py
 
     # 初始化worker
+    echo -e "${BOLD}${DARK_YELLOW}初始化worker..."
     allocmd generate worker --env prod && chmod -R +rx ./data/scripts
 
 
@@ -181,74 +186,61 @@ sed -i '/services:/a\
       dockerfile: Dockerfile_inference\
     command: python -u /app/app.py\
     ports:\
-      - "8000:8000"\
-    networks:\
-      b7s-local:\
-        aliases:\
-          - inference\
-        ipv4_address: 172.19.0.4' prod-docker-compose.yaml
+      - "8000:8000"' prod-docker-compose.yaml
+
+
+    echo -e "${BOLD}${DARK_YELLOW}拉取基础镜像..."
+
+    docker pull amd64/python:3.9-buster
+    docker pull alloranetwork/allora-inference-base:latest
+
 
     # 构建镜像
+    echo -e "${BOLD}${DARK_YELLOW}构建镜像..."
     docker compose -f prod-docker-compose.yaml build
     sleep 10
 
     # 构建运行镜像
+    echo -e "${BOLD}${DARK_YELLOW}Up docker compose..."
     docker compose -f prod-docker-compose.yaml up -d
+
+    docker ps
 }
 
 function do_install_worker2() {
-  cd $HOME
-  echo -e "${BOLD}${UNDERLINE}${DARK_YELLOW}Installing Allorand...${RESET}"
+  # Clone and build Allora chain
   git clone https://github.com/allora-network/allora-chain.git
   cd allora-chain && make all
-  echo
 
-  echo -e "${BOLD}${DARK_YELLOW}Checking allorand version...${RESET}"
-  allorad version
-  echo
+  # Wallet setup
+  echo "Choose an option: "
+  echo "1. Use existing wallet"
+  echo "2. Create new wallet"
+  read -p "Enter option number: " option
 
-  echo -e "${BOLD}${UNDERLINE}${DARK_YELLOW}Importing wallet...${RESET}"
-  allorad keys add testkey --recover
-  echo
+  if [ "$option" == "1" ]; then
+      read -p "Enter your seed phrases: " seed_phrase
+      allorad keys add testkey --recover <<< "$seed_phrase"
+  else
+      allorad keys add testkey
+  fi
 
-  echo "Request faucet to your wallet from this link: https://faucet.edgenet.allora.network/"
-  echo
-
-  echo -e "${BOLD}${UNDERLINE}${DARK_YELLOW}Installing worker node...${RESET}"
+  # Clone and set up the prediction node
+  cd $HOME
   git clone https://github.com/allora-network/basic-coin-prediction-node
   cd basic-coin-prediction-node
-  mkdir worker-data
-  mkdir head-data
-  echo
-
-  echo -e "${BOLD}${DARK_YELLOW}Giving permissions...${RESET}"
+  mkdir worker-data head-data
   sudo chmod -R 777 worker-data head-data
-  echo
 
-  echo -e "${BOLD}${DARK_YELLOW}Creating Head keys...${RESET}"
-  echo
   sudo docker run -it --entrypoint=bash -v $(pwd)/head-data:/data alloranetwork/allora-inference-base:latest -c "mkdir -p /data/keys && (cd /data/keys && allora-keys)"
-  echo
   sudo docker run -it --entrypoint=bash -v $(pwd)/worker-data:/data alloranetwork/allora-inference-base:latest -c "mkdir -p /data/keys && (cd /data/keys && allora-keys)"
-  echo
 
-  echo -e "${BOLD}${DARK_YELLOW}This is your Head ID:${RESET}"
+  echo "Your head-id is: "
   cat head-data/keys/identity
   echo
 
-  if [ -f docker-compose.yml ]; then
-      rm docker-compose.yml
-      echo "Removed existing docker-compose.yml file."
-      echo
-  fi
-
-  read -p "Enter HEAD_ID: " HEAD_ID
-  echo
-
-  read -p "Enter WALLET_SEED_PHRASE: " WALLET_SEED_PHRASE
-  echo
-
-  echo -e "${BOLD}${UNDERLINE}${DARK_YELLOW}Generating docker-compose.yml file...${RESET}"
+  read -p "Re-enter your head-id: " head_id
+  read -p "Enter your wallet seed phrases: " wallet_seed
 
 cat <<EOF > docker-compose.yml
 version: '3'
@@ -268,7 +260,7 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/inference/ETH"]
       interval: 10s
-      timeout: 10s
+      timeout: 5s
       retries: 12
     volumes:
       - ./inference-data:/app/data
@@ -315,12 +307,12 @@ services:
         allora-node --role=worker --peer-db=/data/peerdb --function-db=/data/function-db \
           --runtime-path=/app/runtime --runtime-cli=bls-runtime --workspace=/data/workspace \
           --private-key=/data/keys/priv.bin --log-level=debug --port=9011 \
-          --boot-nodes=/ip4/172.22.0.100/tcp/9010/p2p/$HEAD_ID \
+          --boot-nodes=/ip4/172.22.0.100/tcp/9010/p2p/$head_id \
           --topic=allora-topic-1-worker \
           --allora-chain-key-name=testkey \
-          --allora-chain-restore-mnemonic='$WALLET_SEED_PHRASE' \
+          --allora-chain-restore-mnemonic='$wallet_seed' \
           --allora-node-rpc-address=https://allora-rpc.edgenet.allora.network/ \
-          --allora-chain-topic-id=allora-topic-1-worker
+          --allora-chain-topic-id=1
     volumes:
       - ./worker-data:/data
     working_dir: /data
@@ -375,16 +367,14 @@ volumes:
   head-data:
 EOF
 
-  echo -e "${BOLD}${DARK_YELLOW}docker-compose.yml file generated successfully!${RESET}"
-  echo
-
-  echo -e "${BOLD}${UNDERLINE}${DARK_YELLOW}Building and starting Docker containers...${RESET}"
   docker-compose build
   docker-compose up -d
-  echo
 
-  echo -e "${BOLD}${DARK_YELLOW}Checking running Docker containers...${RESET}"
   docker ps
+
+  echo "════════════════════════════════════════════════════════════"
+  echo "║     Script written by CIPHER_AIRDROP                      ║"
+  echo "════════════════════════════════════════════════════════════"
 }
 
 function install_worker() {
