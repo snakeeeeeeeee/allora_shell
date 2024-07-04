@@ -372,9 +372,6 @@ EOF
 
   docker ps
 
-  echo "════════════════════════════════════════════════════════════"
-  echo "║     Script written by CIPHER_AIRDROP                      ║"
-  echo "════════════════════════════════════════════════════════════"
 }
 
 function install_worker() {
