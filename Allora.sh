@@ -178,9 +178,12 @@ sed -i '/services:/a\
     ports:\
       - "8000:8000"' prod-docker-compose.yaml
 
-
+    # 构建镜像
+    docker compose -f prod-docker-compose.yaml build
+    sleep 10
+    
     # 构建运行镜像
-    docker compose -f prod-docker-compose.yaml up --build -d
+    docker compose -f prod-docker-compose.yaml up -d
 }
 
 
